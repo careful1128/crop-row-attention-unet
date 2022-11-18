@@ -165,10 +165,12 @@ class ChannelAttentionModule(nn.Module):
     def forward(self, x):
         avgout = self.shared_MLP(self.avg_pool(x))
         maxout = self.shared_MLP(self.max_pool(x))
-        return self.sigmoid(avgout + maxout)
+        out    = self.sigmoid(avgout + maxout)
+        
+        return out        
 
 class SpatialAttentionModule(nn.Module):
-    def __init__(self):
+    def __init__(self):     # 不需要关注通道数 所以不用关注通道数 和 比例
         super(SpatialAttentionModule, self).__init__()
         self.conv2d = nn.Conv2d(in_channels=2, out_channels=1, kernel_size=7, stride=1, padding=3)
         self.sigmoid = nn.Sigmoid()
@@ -181,14 +183,14 @@ class SpatialAttentionModule(nn.Module):
         return out
 
 class CBAM(nn.Module):
-    def __init__(self, channel):
+    def __init__(self, channel, ):
         super(CBAM, self).__init__()
-        self.channel_attention = ChannelAttentionModule(channel)
-        self.spatial_attention = SpatialAttentionModule(channel)
+        self.channel_attention = ChannelAttentionModule(channel)      # pay attention to channel
+        self.spatial_attention = SpatialAttentionModule()  # pay attention to kernel_size
 
     def forward(self, x):
-        out = self.channel_attention(x) * x
-        out = self.spatial_attention(out) * out
+        out = self.channel_attention(out) * x
+        out = self.spatial_attention(out) * x
         return out
 
 class DoubleConv(nn.Sequential):
@@ -287,7 +289,7 @@ class se_block(nn.Module):
     def __init__(self, channel, ratio=16):
         super(se_block, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        print(channel, ratio)
+        # print(channel, ratio)
         self.fc = nn.Sequential(
                 nn.Linear(channel, channel // ratio, bias=False),
                 nn.ReLU(inplace=True),
@@ -297,11 +299,19 @@ class se_block(nn.Module):
 
     def forward(self, x):
 
-        y = self.avg_pool(x)
-        b, c, _, _ = x.size()
-        y=y.view(b,c)
-        y = self.fc(y).view(b, c, 1, 1)
-        return x * y.expand_as(x)
+        # y = self.avg_pool(x)
+        # b, c, _, _ = x.size()
+        # y=y.view(b,c)
+        # y = self.fc(y).view(b, c, 1, 1)
+        # return x * y.expand_as(x)
+        b , c, h , w = x.size()
+        # b , c , h , w -->b , c , 1 , 1
+        avg = self.avg_pool(x).view([b , c])
+        
+        # b , c --> b , c//ratio --> b , c , 1 , 1
+        fc = self.fc(avg).view([b , c , 1 , 1]) 
+        
+        return x * fc
 
 class eca_layer(nn.Module):
     def __init__(self, channel, k_size=3):
@@ -470,16 +480,12 @@ class BARU_Net(nn.Module):
         self.Conv5 = BABasicBlock(ch_in=512, ch_out=1024)
         self.cbam1 = CBAM(channel=64)
         # self.SE1=se_block(channel=512)
-        # self.CE1=eca_layer(channel=512)
         self.cbam2 = CBAM(channel=128)
         # self.SE2 = se_block(channel=256)
-        # self.CE1 = eca_layer(channel=256)
         self.cbam3 = CBAM(channel=256)
         # self.SE3 = se_block(channel=128)
-        # self.CE1 = eca_layer(channel=128)
         self.cbam4 = CBAM(channel=512)
         # self.SE4 = se_block(channel=64)
-        # self.CE1 = eca_layer(channel=64)
         self.Up5 = up_conv(ch_in=1024, ch_out=512)
         self.aspp = ASPP(1024, 1024)
         self.Up_conv5 = conv_block(ch_in=1024, ch_out=512)
@@ -517,26 +523,22 @@ class BARU_Net(nn.Module):
         # decoding + concat path
         d5 = self.Up5(x5)
         # d5 = self.SE1(d5)
-        # d5=self.CE1(d5)
         d5 = torch.cat((x4, d5), dim=1)
 
         d5 = self.Up_conv5(d5)
 
         d4 = self.Up4(d5)
         # d4=self.SE2(d4)
-        # d4= self.CE1(d4)
         d4 = torch.cat((x3, d4), dim=1)
         d4 = self.Up_conv4(d4)
 
         d3 = self.Up3(d4)
         # d3=self.SE3(d3)
-        # d3= self.CE1(d3)
         d3 = torch.cat((x2, d3), dim=1)
         d3 = self.Up_conv3(d3)
 
         d2 = self.Up2(d3)
         # d2=self.SE4(d2)
-        # d2 = self.CE1(d2)
         d2 = torch.cat((x1, d2), dim=1)
         d2 = self.Up_conv2(d2)
 
@@ -556,7 +558,7 @@ class BIARU_Net(nn.Module):
         self.Conv4 = BABasicBlock(ch_in=256, ch_out=512)
         self.Conv5 = BABasicBlock(ch_in=512, ch_out=1024)
         self.cbam1 = CBAM(channel=64)
-        self.SE1=se_block(channel=512)
+        self.SE1 = se_block(channel=512)
         self.cbam2 = CBAM(channel=128)
         self.SE2 = se_block(channel=256)
         self.cbam3 = CBAM(channel=256)
@@ -687,6 +689,9 @@ class UNet(nn.Module):
 class U_Net(nn.Module):
     def __init__(self, img_ch=3, output_ch=1):
         super(U_Net, self).__init__()
+        self.n_channels = img_ch
+        self.n_classes = output_ch
+        self.bilinear = False
 
         self.Maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
 
@@ -696,7 +701,7 @@ class U_Net(nn.Module):
         self.Conv4 = conv_block(ch_in=256, ch_out=512)
         self.Conv5 = conv_block(ch_in=512, ch_out=1024)
         self.cbam1 = CBAM(channel=64)
-        self.SE1=se_block(channel=512)
+        self.SE1 = se_block(channel=512)
         self.cbam2 = CBAM(channel=128)
         self.SE2 = se_block(channel=256)
         self.cbam3 = CBAM(channel=256)
@@ -719,6 +724,7 @@ class U_Net(nn.Module):
 
     def forward(self, x):
         # encoding path
+        # x = torch.cat([x, x, x], axis=1)
         x1 = self.Conv1(x)
         x1 = self.cbam1(x1) + x1
         x2 = self.Maxpool(x1)
@@ -985,7 +991,7 @@ class SpatialAttentionModule(nn.Module):
         return out
 
 class CBAM(nn.Module):
-    def __init__(self, channel):
+    def __init__(self, channel, kernel_size =7):
         super(CBAM, self).__init__()
         self.channel_attention = ChannelAttentionModule(channel)
         self.spatial_attention = SpatialAttentionModule()
@@ -1028,7 +1034,7 @@ class up_conv(nn.Module):
         return x
 
 
-class U_Net_v1(nn.Module):  # 添加了空间注意力和通道注意力
+class U_Net_v1(nn.Module):  
     def __init__(self, img_ch=3, output_ch=2):
         super(U_Net_v1, self).__init__()
         self.n_channels = img_ch
@@ -1238,6 +1244,7 @@ class Upsample_n_Concat(nn.Module):
 class Dense_Unet(nn.Module):
     def __init__(self, in_chan=3,out_chan=2,filters=128, num_conv=4):
 
+
         super(Dense_Unet, self).__init__()
         self.conv1 = nn.Conv2d(in_chan, filters, 1)
         self.d1 = Single_level_densenet(filters, num_conv)
@@ -1410,7 +1417,7 @@ class AttEffU_Net(nn.Module):
         
         self.backbone_compound_coef = [0, 1, 2, 3, 4, 5, 6, 7]
 
-        compound_coef = 7
+        compound_coef = 0
         self.backbone_net = EfficientNet(self.backbone_compound_coef[compound_coef], True)
         p1, p2, p3, p4, p5 = conv_channel_coef[compound_coef]
         p0 = p1//2
@@ -1439,7 +1446,7 @@ class AttEffU_Net(nn.Module):
 
     def forward(self, x):
         # encoding path
-        x = torch.cat([x, x, x], axis=1)
+        # x = torch.cat([x, x, x], axis=1)
         x1, x2, x3, x4, x5 = self.backbone_net(x)
         # print(x1.shape, x2.shape, x3.shape, x4.shape, x5.shape)
 

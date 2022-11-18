@@ -66,7 +66,7 @@ class Test():
         ## restore to original dimensions
         self.pred_imgs = self.pred_imgs[:, :, 0:self.img_height, 0:self.img_width]
 
-        #predictions only inside the FOV
+        # predictions only inside the FOV
         y_scores, y_true = pred_only_in_FOV(self.pred_imgs, self.test_masks, self.test_FOVs)
         print(self.test_masks.shape, y_scores.shape, self.pred_imgs.shape)
         eval = Evaluate(save_path=self.path_experiment)
@@ -87,6 +87,7 @@ class Test():
         if not os.path.exists(join(self.save_img_path)):
             os.makedirs(self.save_img_path)
         self.test_imgs = my_PreProc(self.test_imgs) # Uncomment to save the pre processed image
+        print(len(img_path_list), self.test_imgs.shape)
         for i in range(self.test_imgs.shape[0]):
             total_img = concat_result(self.test_imgs[i],self.pred_imgs[i],self.test_masks[i])
             save_img(total_img,join(self.save_img_path, "Result_"+img_name_list[i]+'.png'))
@@ -112,10 +113,12 @@ class Test():
 
 def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
-    parser.add_argument('--model', '-m', default='./checkpoints/checkpoint_epoch5_mixed_UNet.pth', metavar='FILE',
+    parser.add_argument('--model', '-m', default='./checkpoints/UNet-SE+CBAM_DDP_checkpoint_epoch45.pth', metavar='FILE',
                         help='Specify the file in which the model is stored')
     parser.add_argument('--input', '-i', metavar='INPUT', nargs='+', help='Filenames of input images', required=True)
+    # parser.add_argument('--input', '-i', metavar='INPUT', help='Filenames of input images', default='./data/imgs/1.jpg')
     parser.add_argument('--output', '-o', metavar='OUTPUT', nargs='+', help='Filenames of output images')
+    # parser.add_argument('--output', '-o', metavar='OUTPUT', help='Filenames of output images')
     parser.add_argument('--viz', '-v', action='store_true',
                         help='Visualize the images as they are processed')
     parser.add_argument('--no-save', '-n', action='store_true', help='Do not save the output masks')
@@ -125,11 +128,11 @@ def get_args():
                         help='Scale factor for the input images')
     parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
 
-    parser.add_argument('--test_patch_height', default=96)
-    parser.add_argument('--test_patch_width', default=96)
-    parser.add_argument('--stride_height', default=32)
-    parser.add_argument('--stride_width', default=32)
-    parser.add_argument('--batch_size', default=128,
+    parser.add_argument('--test_patch_height', default=512)
+    parser.add_argument('--test_patch_width', default=512)
+    parser.add_argument('--stride_height', default=512)
+    parser.add_argument('--stride_width', default=512)
+    parser.add_argument('--batch_size', default=4,
                         type=int, help='batch size')
 
     return parser.parse_args()
@@ -141,8 +144,8 @@ if __name__ == '__main__':
     # sys.stdout = Print_Logger(os.path.join(save_path, 'test_log.txt'))
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    net = UNet(1, 2, args.bilinear)
-    # net = models.UNetFamily.AttU_Net(1, 2).to(device)
+    # net = UNet(1, 2, args.bilinear)
+    net = models.UNetFamily.U_Net(3, 2).to(device)
     cudnn.benchmark = True
 
     # Load checkpoint
@@ -154,4 +157,4 @@ if __name__ == '__main__':
     eval = Test(args)
     eval.inference(net)
     print(eval.evaluate())
-    # eval.save_segmentation_result()
+    eval.save_segmentation_result()

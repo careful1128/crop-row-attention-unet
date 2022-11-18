@@ -1,3 +1,3 @@
 #!/bin/bash 
- ps -ef | grep train_with 
- ps -ef | grep train_with | awk '{print $2}' | xargs kill -9 
+ ps -ef | grep ddp 
+ ps -ef | grep ddp | awk '{print $2}' | xargs kill -9 

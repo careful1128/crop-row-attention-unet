@@ -8,4 +8,7 @@ checkpoints/
 venv/
 .idea/
 wandb/
+nohup.out
+sample
+
 

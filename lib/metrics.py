@@ -80,6 +80,8 @@ class Evaluate():
     
     # Plot ROC and calculate AUC of ROC
     def auc_roc(self,plot=False):
+        self.output = np.array(self.output>0.5)*1
+        self.target = np.array(self.target>0.5)*1
         AUC_ROC = roc_auc_score(self.target, self.output)
         # print("\nAUC of ROC curve: " + str(AUC_ROC))
         if plot and self.save_path is not None:

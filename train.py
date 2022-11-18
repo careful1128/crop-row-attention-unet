@@ -231,9 +231,10 @@ def train_net(net,
         # scheduler.step()
         # if save_checkpoint :
         if save_checkpoint and LOCAL_RANK == 0 and (epoch % args.save_every == 0):
+            backbone = args.backbone
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             # torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
-            torch.save(net.module.state_dict(), str(dir_checkpoint / 'DDP_checkpoint_epoch{}.pth'.format(epoch)))
+            torch.save(net.module.state_dict(), str(dir_checkpoint / '{}_DDP_checkpoint_epoch{}.pth'.format(backbone, epoch)))
             
             logging.info(f'Checkpoint {epoch} saved!')
 
@@ -266,6 +267,8 @@ parser.add_argument('--exp_name', type=str, default='xiaoxin_exp')
 parser.add_argument('--ddp_mode', action='store_true', default=True)
 parser.add_argument('--save_every', type=int, default= 5)
 parser.add_argument('--start_from', type=int, default= 0)
+parser.add_argument('--backbone', type=str, default="UNet", help="what backbone is used")
+
 
 
     # return parser.parse_args()
@@ -299,7 +302,7 @@ if __name__ == '__main__':
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
     # net = UNet(3, args.classes, args.bilinear)
-    net = models.UNetFamily.AttEffU_Net(3, 2).to(device)
+    net = models.UNetFamily.U_Net(3, 2).to(device)
     
     if LOCAL_RANK == 0:
         logging.info(f'Network:\n'

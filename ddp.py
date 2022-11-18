@@ -213,7 +213,7 @@ parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
 parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
 parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
 parser.add_argument('--classes', '-c', type=int, default=2, help='Number of classes')
-parser.add_argument('--exp_name', type=str, default='hgb_exp')
+parser.add_argument('--exp_name', type=str, default='wxg_exp')
 parser.add_argument('--ddp_mode', action='store_true')
 parser.add_argument('--save_every', type=int, default=5)
 parser.add_argument('--start_from', type=int, default=0)

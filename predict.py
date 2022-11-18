@@ -111,7 +111,7 @@ class Test():
 
 def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
-    parser.add_argument('--model', '-m', default='./checkpoints/checkpoint_epoch5_mixed_our.pth', metavar='FILE',
+    parser.add_argument('--model', '-m', default='./checkpoints/Attunet_DDP_checkpoint_epoch15.pth', metavar='FILE',
                         help='Specify the file in which the model is stored')
     parser.add_argument('--input', '-i', metavar='INPUT', nargs='+', help='Filenames of input images', required=True)
     parser.add_argument('--output', '-o', metavar='OUTPUT', nargs='+', help='Filenames of output images')
@@ -128,11 +128,11 @@ def get_args():
     # parser.add_argument('--test_patch_width', default=96)
     # parser.add_argument('--stride_height', default=32)
     # parser.add_argument('--stride_width', default=32)
-    parser.add_argument('--test_patch_height', default=192)
-    parser.add_argument('--test_patch_width', default=192)
-    parser.add_argument('--stride_height', default=64)
-    parser.add_argument('--stride_width', default=64)
-    parser.add_argument('--batch_size', default=64,
+    parser.add_argument('--test_patch_height', default=512)
+    parser.add_argument('--test_patch_width', default=512)
+    parser.add_argument('--stride_height', default=512)
+    parser.add_argument('--stride_width', default=512)
+    parser.add_argument('--batch_size', default=4,
                         type=int, help='batch size')
 
     return parser.parse_args()
@@ -145,8 +145,8 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # net = UNet(1, 2, args.bilinear)
-    # net = models.UNetFamily.AttU_Net(1, 2).to(device)
-    net = models.UNetFamily.AttEffU_Net(3, 2).to(device)
+    net = models.UNetFamily.AttU_Net(3, 2).to(device)
+    # net = models.UNetFamily.AttEffU_Net(3, 2).to(device)
     cudnn.benchmark = True
 
     # Load checkpoint
@@ -159,3 +159,4 @@ if __name__ == '__main__':
     eval.inference(net)
     print(eval.evaluate())
     # eval.save_segmentation_result()
+    eval.save_segmentation_result()

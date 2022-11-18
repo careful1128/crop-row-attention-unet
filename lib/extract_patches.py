@@ -100,6 +100,9 @@ def load_data(data_path_list_file):
     imgs = np.load('./data/imgs/imgs.npy')
     groundTruth = np.load('./data/masks/groundTruth.npy')
     FOVs = np.load("./data/fovs/FOVs.npy")
+    imgs  = imgs[:10]
+    groundTruth  = groundTruth[:10]
+    FOVs  = FOVs[:10]
     # imgs = np.concatenate([imgs, imgs, imgs], axis=1)
     return imgs, groundTruth, FOVs
 
@@ -199,7 +202,9 @@ def get_data_test_overlap(test_data_path_list, patch_height, patch_width, stride
     test_masks = test_masks/255.
     test_FOVs = test_FOVs//255
     #extend both images and masks so they can be divided exactly by the patches dimensions
+    print(test_imgs.shape)
     test_imgs = paint_border_overlap(test_imgs, patch_height, patch_width, stride_height, stride_width)
+    print(test_imgs.shape)
 
     #check masks are within 0-1
     assert(np.max(test_masks)==1  and np.min(test_masks)==0)
@@ -255,6 +260,8 @@ def extract_ordered_overlap(full_imgs, patch_h, patch_w,stride_h,stride_w):
     patches = np.empty((N_patches_tot,full_imgs.shape[1],patch_h,patch_w))
     iter_tot = 0   #iter over the total number of patches (N_patches)
     for i in range(full_imgs.shape[0]):  #loop over the full images
+        # img_h= 512
+        # patch_h = 128   stride_h = 64
         for h in range((img_h-patch_h)//stride_h+1):
             for w in range((img_w-patch_w)//stride_w+1):
                 patch = full_imgs[i,:,h*stride_h:(h*stride_h)+patch_h,w*stride_w:(w*stride_w)+patch_w]
@@ -328,7 +335,7 @@ def pred_only_in_FOV(data_imgs,data_masks,FOVs):
         for x in range(width):
             for y in range(height):
                 if pixel_inside_FOV(i,x,y,FOVs):
-                    print(data_imgs[i,:,y,x].shape)
+                    # print(data_imgs[i,:,y,x].shape)
                     new_pred_imgs.append(data_imgs[i,:,y,x])
                     new_pred_masks.append(data_masks[i,:,y,x])
     new_pred_imgs = np.asarray(new_pred_imgs)

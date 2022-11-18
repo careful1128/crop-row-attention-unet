@@ -9,9 +9,9 @@ import cv2
 
 #My pre processing (use for both training and testing!)
 def my_PreProc(data):
-    assert(len(data.shape)==4)
+    # assert(len(data.shape)==4)
     # assert (data.shape[1]==3)  #Use the original images
-    #black-white conversion
+    # black-white conversion
     # train_imgs = rgb2gray(data)
     train_imgs = data
     # train_imgs = np.concatenate([train_imgs, data], axis=1)
@@ -19,6 +19,7 @@ def my_PreProc(data):
     # train_imgs = dataset_normalized(train_imgs)
     # train_imgs = clahe_equalized(train_imgs)
     # train_imgs = adjust_gamma(train_imgs, 1.2)
+    # train_imgs = EXG(train_imgs)
     train_imgs = train_imgs/255.  #reduce to 0-1 range
     return train_imgs
 
@@ -83,3 +84,24 @@ def adjust_gamma(imgs, gamma=1.0):
         new_imgs[i,0] = cv2.LUT(np.array(imgs[i,0], dtype = np.uint8), table)
     return new_imgs
 
+def EXG(imgs):
+    assert (len(imgs.shape)==4)  #4D arrays
+    # assert (rgb.shape[1]==3)
+    # print(len(rgb.shape()))
+    # imgs = imgs.numpy.convert("RGB")
+    b, g, r = cv2.split(imgs)
+    #ExG_sub = cv2.subtract(2*g,r)
+    #ExG = cv2.subtract(ExG_sub,b )
+    ExG = 2*g-r-b
+    [m,n] = ExG.shape
+    for i in range(m):
+        for j in range(n):
+            if ExG[i,j]<0:
+                ExG[i,j]=0
+            elif ExG[i,j]>255:
+                ExG[i,j]=255
+                  
+    ExG = np.array(ExG,dtype='uint8')  #重新转换成uint8类型
+    ret2, th2 = cv2.threshold(ExG, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)  
+    
+    return ExG

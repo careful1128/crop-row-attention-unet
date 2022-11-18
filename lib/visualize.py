@@ -35,6 +35,7 @@ def concat_result(ori_img,pred_res,gt):
         pred_res = np.repeat((pred_res*255).astype(np.uint8),repeats=3,axis=2)
         binary = np.repeat((binary*255).astype(np.uint8),repeats=3,axis=2)
         gt = np.repeat((gt*255).astype(np.uint8),repeats=3,axis=2)
+        ori_img = ori_img*255
     if ori_img.shape[2]==1:
         pred_res = np.repeat((pred_res*255).astype(np.uint8),repeats=3,axis=2)
         binary = np.repeat((binary*255).astype(np.uint8),repeats=3,axis=2)
@@ -47,6 +48,13 @@ def concat_result(ori_img,pred_res,gt):
     # colormap = plt.get_cmap('inferno')
     # gt = (colormap(gt[:, :, 0]) * 2**16).astype(np.uint16)[:,:,:3] / (2**16) * 255
     # pred_res = cv2.cvtColor(pred_res, cv2.COLOR_RGB2BGR) 
+    print(ori_img.max(), ori_img.min())
+    
+    # from lib.losses.pre_processing import EXG
+    # from lib.losses.pre_processing import clahe_equalized
+    
+    # pred_res = clahe_equalized(pred_res)
+    # pred_res = EXG(pred_res)
     
     total_img = np.concatenate((ori_img,pred_res,binary,gt),axis=1)
     return total_img

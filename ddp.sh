@@ -11,4 +11,5 @@ torchrun --nproc_per_node 4 \
             --ddp_mode \
             --start_from 0 \
             --exp_name wxg \
+            --backbone UNet-SE+CBAM \
             # --load /home/shenlan07/Pytorch-UNet-master2/checkpoints/DDP_checkpoint_epoch48.p
