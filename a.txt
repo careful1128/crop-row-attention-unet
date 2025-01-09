@@ -1,5 +1,0 @@
-git add .
-git add aaa.py
-git status
-
-git commit -m "asdfasdgaewag"
